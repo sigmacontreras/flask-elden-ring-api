@@ -12,6 +12,8 @@ users = {
     "aquiles.bailo@gmail.com": "123",
     "esteban.quito": "123"
 }
+favourite_greatswords = {}
+
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
 
@@ -21,7 +23,7 @@ def hello_world():  # put application's code here
     return 'Hello World!'
 
 
-@app.route('/api/v1/allgreatswords')
+@app.route('/api/v1/all-greatswords')
 def get_all_greatswords():
     img_dir = os.path.join(app.static_folder, 'img')
     greatswords = []
@@ -34,6 +36,32 @@ def get_all_greatswords():
             greatswords.append({"url": "http://localhost:5000/api/v1" + url, "name": name, "id": _id})
 
     return jsonify(greatswords)
+
+
+@app.route('/api/v1/favourite-greatswords', methods=['GET', 'POST'])
+@cross_origin(supports_credentials=True)
+def get_favourite_greatswords():
+    if 'username' in session:
+        username = session['username']
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data or 'url' not in data:
+                return jsonify({"url": "null", "id": "null", "name": "null", "index": 0}), 400
+            if username not in favourite_greatswords:
+                favourite_greatswords[username] = []
+            if len(favourite_greatswords[username]) <= data['index']:
+                favourite_greatswords[username].append(data)
+            else:
+                favourite_greatswords[username][data['index']] = data
+            return jsonify(data), 200
+        else:
+            favorites = favourite_greatswords.get(username, [])
+            return jsonify(favorites), 200
+    else:
+        null_favourites = [{'url': 'null', 'id': 'null', 'name': 'null'},
+                           {'url': 'null', 'id': 'null', 'name': 'null'},
+                           {'url': 'null', 'id': 'null', 'name': 'null'}]
+        return jsonify(null_favourites), 400
 
 
 @app.route('/api/v1/login', methods=['POST'])
@@ -67,4 +95,4 @@ def serve_image(filename):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True)
